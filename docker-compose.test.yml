@@ -1,0 +1,27 @@
+version: '3.8'
+services:
+  postgres-test:
+    image: postgres:16-alpine
+    container_name: financeai-db-test
+    environment:
+      POSTGRES_DB: financeai_test
+      POSTGRES_USER: financeai_user
+      POSTGRES_PASSWORD: finance123
+    ports:
+      - "5433:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+  app-test:
+    build: .
+    container_name: financeai-app-test
+    depends_on:
+      - postgres-test
+    environment:
+      SPRING_PROFILES_ACTIVE: test
+      DATABASE_URL: jdbc:postgresql://postgres-test:5432/financeai_test
+      DATABASE_USERNAME: financeai_user
+      DATABASE_PASSWORD: finance123
+      JWT_SECRET: test-secret-key-para-testes
+      OPENAI_API_KEY: sk-fake-key-para-testes
+    ports:
+      - "8081:8080"
