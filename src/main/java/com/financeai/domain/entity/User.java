@@ -59,10 +59,6 @@ public class User {
     @Builder.Default
     private List<Diagnostico> diagnosticos = new ArrayList<>();
 
-    /**
-     * Construtor de negócio — usado pelo AuthUseCase.
-     * Clean Code: construtor com intenção clara, sem campos desnecessários.
-     */
     public User(String name, String email, String password) {
         this.name = name;
         this.email = email;
@@ -73,10 +69,6 @@ public class User {
         this.diagnosticos = new ArrayList<>();
     }
 
-    /**
-     * SOLID — equals e hashCode baseados APENAS no ID.
-     * Garante consistência com o JPA: dois Users com mesmo ID são o mesmo objeto.
-     */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -89,10 +81,6 @@ public class User {
         return Objects.hash(id);
     }
 
-    /**
-     * Clean Code — toString sem password.
-     * Impede que a senha apareça em logs ou stack traces.
-     */
     @Override
     public String toString() {
         return "User{" +

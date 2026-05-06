@@ -61,14 +61,6 @@ public class Diagnostico {
     @JoinColumn(name = "goal_id")
     private Goal goal;
 
-    // =========================================================
-    // ENUM com comportamento — Java 21 switch expression
-    // =========================================================
-
-    /**
-     * Saúde financeira do usuário.
-     * Clean Code: enum com label, emoji e lógica encapsulada.
-     */
     public enum HealthStatus {
         HEALTHY, WARNING, CRITICAL;
 
@@ -94,14 +86,6 @@ public class Diagnostico {
         }
     }
 
-    // =========================================================
-    // MÉTODOS DE DOMÍNIO — Clean Code
-    // =========================================================
-
-    /**
-     * Calcula a diferença entre cenário recomendado e atual.
-     * Clean Code: nome expressivo que revela o impacto potencial.
-     */
     public BigDecimal potentialImprovement() {
         if (projectedBalance == null || currentBalance == null) {
             return BigDecimal.ZERO;
@@ -109,16 +93,9 @@ public class Diagnostico {
         return projectedBalance.subtract(currentBalance);
     }
 
-    /**
-     * Verifica se o diagnóstico indica melhora possível.
-     */
     public boolean canImprove() {
         return potentialImprovement().compareTo(BigDecimal.ZERO) > 0;
     }
-
-    // =========================================================
-    // equals, hashCode e toString — SOLID + Clean Code
-    // =========================================================
 
     @Override
     public boolean equals(Object o) {

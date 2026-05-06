@@ -48,14 +48,6 @@ public class Goal {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    // =========================================================
-    // ENUM com comportamento — Java 21 switch expression
-    // =========================================================
-
-    /**
-     * Status do objetivo financeiro.
-     * Clean Code: enum com label em português e lógica encapsulada.
-     */
     public enum GoalStatus {
         VIABLE,
         NOT_VIABLE,
@@ -75,14 +67,7 @@ public class Goal {
         }
     }
 
-    // =========================================================
-    // MÉTODOS DE DOMÍNIO — Clean Code
-    // =========================================================
 
-    /**
-     * Calcula o valor mensal necessário para atingir o objetivo.
-     * Clean Code: nome expressivo que revela a intenção.
-     */
     public BigDecimal requiredMonthlySaving() {
         if (deadlineMonths <= 0) return targetAmount;
         return targetAmount.divide(
@@ -92,17 +77,9 @@ public class Goal {
         );
     }
 
-    /**
-     * Verifica se o objetivo é alcançável com a poupança mensal informada.
-     * Clean Code: método boolean com nome que expressa a pergunta.
-     */
     public boolean isAchievable(BigDecimal monthlySaving) {
         return monthlySaving.compareTo(requiredMonthlySaving()) >= 0;
     }
-
-    // =========================================================
-    // equals, hashCode e toString — SOLID + Clean Code
-    // =========================================================
 
     @Override
     public boolean equals(Object o) {

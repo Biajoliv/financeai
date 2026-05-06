@@ -54,14 +54,6 @@ public class Transaction {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    // =========================================================
-    // ENUMS com comportamento — Strategy Pattern implícito
-    // =========================================================
-
-    /**
-     * Tipo da transação.
-     * Clean Code: enum com método que encapsula regra de negócio.
-     */
     public enum TransactionType {
         INCOME, EXPENSE;
 
@@ -78,23 +70,12 @@ public class Transaction {
         }
     }
 
-    /**
-     * Categoria da transação.
-     * Open/Closed: novas categorias sem alterar lógica existente.
-     */
     public enum Category {
         FOOD, TRANSPORT, HEALTH, LEISURE,
         EDUCATION, HOUSING, SALARY, OTHER
     }
 
-    // =========================================================
-    // MÉTODOS DE DOMÍNIO — Clean Code: nomes expressivos
-    // =========================================================
-
-    /**
-     * Java 21 — switch expression para label legível em português.
-     * Clean Code: método com responsabilidade única e nome expressivo.
-     */
+    
     public String categoryLabel() {
         return switch (category) {
             case FOOD       -> "Alimentação";
@@ -108,21 +89,12 @@ public class Transaction {
         };
     }
 
-    /**
-     * Retorna o valor com sinal correto para cálculo de saldo.
-     * Java 21 — switch expression.
-     * Clean Code: nome expressivo que revela a intenção.
-     */
     public BigDecimal signedAmount() {
         return switch (type) {
             case INCOME  -> amount;
             case EXPENSE -> amount.negate();
         };
     }
-
-    // =========================================================
-    // equals, hashCode e toString — SOLID + Clean Code
-    // =========================================================
 
     @Override
     public boolean equals(Object o) {
