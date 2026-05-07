@@ -1,0 +1,42 @@
+[
+  {
+    "description": "Venda de Consultoria",
+    "amount": 4500.00,
+    "date": "2026-05-01",
+    "category": "Income",
+    "isEssential": true,
+    "priority": 5
+  },
+  {
+    "description": "Aluguel Escritório",
+    "amount": -1200.00,
+    "date": "2026-05-02",
+    "category": "Housing",
+    "isEssential": true,
+    "priority": 5
+  },
+  {
+    "description": "Assinatura Streaming",
+    "amount": -55.90,
+    "date": "2026-05-05",
+    "category": "Entertainment",
+    "isEssential": false,
+    "priority": 2
+  },
+  {
+    "description": "Restaurante Luxo",
+    "amount": -450.00,
+    "date": "2026-05-10",
+    "category": "Leisure",
+    "isEssential": false,
+    "priority": 1
+  },
+  {
+    "description": "Supermercado",
+    "amount": -800.00,
+    "date": "2026-05-12",
+    "category": "Food",
+    "isEssential": true,
+    "priority": 4
+  }
+]

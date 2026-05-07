@@ -18,7 +18,7 @@ import java.util.Objects;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Diagnostico {
+public class Diagnostic {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -100,7 +100,7 @@ public class Diagnostico {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof Diagnostico other)) return false;
+        if (!(o instanceof Diagnostic other)) return false;
         return Objects.equals(id, other.id);
     }
 
