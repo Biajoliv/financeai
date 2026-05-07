@@ -1,21 +1,33 @@
-version: '3.8'
+version: "3.8"
+
 services:
+
+  # ==========================================
+  # PostgreSQL com PgVector
+  # Imagem especial que já tem o PgVector instalado
+  # ==========================================
   postgres:
-    image: postgres:16-alpine
-    container_name: financeai-db
+    image: pgvector/pgvector:pg16
+    container_name: financeai-postgres
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-financeai}
+      POSTGRES_USER: ${POSTGRES_USER:-financeai_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-finance123}
     ports:
-      - "5432:5432"
+      - "5434:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-financeai_user}"]
       interval: 10s
       timeout: 5s
       retries: 5
+
+  # ==========================================
+  # Aplicação Spring Boot
+  # Só sobe depois que o banco estiver saudável
+  # ==========================================
   app:
     build: .
     container_name: financeai-app
@@ -23,13 +35,16 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
-      DATABASE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
-      DATABASE_USERNAME: ${POSTGRES_USER}
-      DATABASE_PASSWORD: ${POSTGRES_PASSWORD}
-      JWT_SECRET: ${JWT_SECRET}
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+      DATABASE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-financeai}
+      DATABASE_USERNAME: ${POSTGRES_USER:-financeai_user}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-finance123}
+      JWT_SECRET: ${JWT_SECRET:-financeai-secret-key-super-segura-2024}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-disabled}
     ports:
       - "8080:8080"
+    volumes:
+      - ./logs:/app/logs
+
 volumes:
   postgres_data:
