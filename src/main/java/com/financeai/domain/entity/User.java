@@ -57,7 +57,7 @@ public class User {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL,
                fetch = FetchType.LAZY, orphanRemoval = true)
     @Builder.Default
-    private List<Diagnostico> diagnosticos = new ArrayList<>();
+    private List<Diagnostic> diagnostics = new ArrayList<>();
 
     public User(String name, String email, String password) {
         this.name = name;
@@ -66,7 +66,7 @@ public class User {
         this.createdAt = LocalDateTime.now();
         this.transactions = new ArrayList<>();
         this.goals = new ArrayList<>();
-        this.diagnosticos = new ArrayList<>();
+        this.diagnostics = new ArrayList<>();
     }
 
     @Override
