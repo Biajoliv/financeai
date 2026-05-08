@@ -29,10 +29,12 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiResponse<Void>> handleIllegalArgument(IllegalArgumentException ex) {
+        // Loga a mensagem completa internamente, mas retorna mensagem segura ao cliente
         logger.warn("Argumento inválido: {}", ex.getMessage());
+        String safeMessage = ex.getMessage() != null ? ex.getMessage() : "Requisição inválida.";
         return ResponseEntity
             .status(HttpStatus.BAD_REQUEST)
-            .body(ApiResponse.error(ex.getMessage() != null ? ex.getMessage() : "Requisição inválida."));
+            .body(ApiResponse.error(safeMessage));
     }
 
     @ExceptionHandler(NullPointerException.class)

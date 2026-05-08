@@ -16,7 +16,7 @@ import java.util.Objects;
 @Table(name = "transactions",
        indexes = {
            @Index(name = "idx_transaction_user", columnList = "user_id"),
-           @Index(name = "idx_transaction_date", columnList = "date")
+           @Index(name = "idx_transaction_date", columnList = "transaction_date")
        })
 @Getter
 @Setter
@@ -49,8 +49,13 @@ public class Transaction {
     @Column(nullable = false)
     private Category category;
 
+    @Column(name = "transaction_date")
     @Builder.Default
     private LocalDate date = LocalDate.now();
+
+    @Column(name = "is_open_finance")
+    @Builder.Default
+    private boolean isOpenFinance = false;
 
     @Column(name = "created_at", updatable = false)
     @Builder.Default
@@ -59,6 +64,9 @@ public class Transaction {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)

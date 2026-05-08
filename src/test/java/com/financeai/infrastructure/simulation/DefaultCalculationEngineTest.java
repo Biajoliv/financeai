@@ -1,6 +1,7 @@
 package com.financeai.infrastructure.simulation;
 
 import com.financeai.domain.model.*;
+import com.financeai.domain.service.WeightStrategy;
 import com.financeai.infrastructure.utils.DataSanitizer;
 import com.financeai.infrastructure.algorithm.KnapsackOptimizer;
 import org.junit.jupiter.api.BeforeEach;
@@ -11,33 +12,46 @@ import org.mockito.Mockito;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
 
 /**
- * Suíte de testes para validar o motor de cálculo conforme os requisitos do Tema 4. [cite: 117]
- * Valida Multi-tenancy, Algoritmos de Otimização e Java 21. [cite: 17, 34, 50]
+ * Suíte de testes para validar o motor de cálculo conforme os requisitos do Tema 4.
+ * Valida Multi-tenancy, Algoritmos de Otimização e Java 21.
+ *
+ * ATUALIZADO: construtor agora recebe WeightStrategy e TaxStrategyFactory via injeção.
+ * WeightStrategy é mockada para retornar pesos vazios por padrão — isolamento de teste.
  */
 class DefaultCalculationEngineTest {
 
     private DefaultCalculationEngine engine;
     private DataSanitizer sanitizer;
     private KnapsackOptimizer knapsackOptimizer;
-    private final String userId = "user-aloana-123"; // Simulação de Multi-tenant [cite: 50]
+    private WeightStrategy weightStrategy;
+    private TaxStrategyFactory taxStrategyFactory;
+    private final String userId = "user-aloana-123";
 
     @BeforeEach
     void setUp() {
         sanitizer = Mockito.mock(DataSanitizer.class);
         knapsackOptimizer = Mockito.mock(KnapsackOptimizer.class);
-        // Mock do sanitizer para garantir que o foco do teste seja a lógica de cálculo [cite: 43]
+        weightStrategy = Mockito.mock(WeightStrategy.class);
+
+        // TaxStrategyFactory não é mockada: usa implementação real para validar estratégias PF/PJ
+        taxStrategyFactory = new TaxStrategyFactory();
+
         Mockito.when(sanitizer.sanitizeDescription(anyString())).thenAnswer(i -> i.getArgument(0));
-        // Mock knapsack optimizer to return empty list by default (no cuts recommended)
         Mockito.when(knapsackOptimizer.optimizeExpenses(Mockito.anyList(), Mockito.any(), Mockito.anyMap()))
                 .thenReturn(new ArrayList<>());
-        Mockito.when(knapsackOptimizer.calculateDynamicWeights()).thenReturn(new java.util.HashMap<>());
-        engine = new DefaultCalculationEngine(sanitizer, knapsackOptimizer);
+
+        // Pesos retornados vazios por padrão — KnapsackOptimizer usa getOrDefault(category, 1.0)
+        Mockito.when(weightStrategy.calculateWeights()).thenReturn(new HashMap<>());
+
+        engine = new DefaultCalculationEngine(sanitizer, knapsackOptimizer, weightStrategy, taxStrategyFactory);
     }
 
     @Test

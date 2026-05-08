@@ -28,6 +28,9 @@ public class User {
     @Column(name = "id", updatable = false, nullable = false)
     private java.util.UUID id;
 
+    @Column(name = "name")
+    private String name;
+
     @Email(message = "Email inválido")
     @NotBlank(message = "Email é obrigatório")
     @Column(unique = true, nullable = false)
@@ -36,6 +39,11 @@ public class User {
     @NotBlank(message = "Senha é obrigatória")
     @Column(name = "password_hash", nullable = false)
     private String password;
+
+    // system_role = FREE ou PREMIUM (conforme plano)
+    @Column(name = "system_role")
+    @Builder.Default
+    private String systemRole = "FREE";
 
     @Column(updatable = false, nullable = false)
     @Builder.Default
@@ -67,11 +75,17 @@ public class User {
     public User(String email, String password) {
         this.email = email;
         this.password = password;
+        this.systemRole = "FREE";
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
         this.transactions = new ArrayList<>();
         this.goals = new ArrayList<>();
         this.diagnostics = new ArrayList<>();
+    }
+
+    public User(String name, String email, String password) {
+        this(email, password);
+        this.name = name;
     }
 
     @Override

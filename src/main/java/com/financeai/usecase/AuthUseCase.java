@@ -1,7 +1,9 @@
 package com.financeai.usecase;
 
 import com.financeai.domain.entity.User;
+import com.financeai.domain.entity.UserProfile;
 import com.financeai.domain.valueobject.AuthDtos.*;
+import com.financeai.infrastructure.persistence.UserProfileRepository;
 import com.financeai.infrastructure.persistence.UserRepository;
 import com.financeai.infrastructure.security.JwtService;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -18,15 +20,18 @@ public class AuthUseCase {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthUseCase.class);
     private final UserRepository userRepository;
+    private final UserProfileRepository profileRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authManager;
 
     public AuthUseCase(UserRepository userRepository,
+                       UserProfileRepository profileRepository,
                        PasswordEncoder passwordEncoder,
                        JwtService jwtService,
                        AuthenticationManager authManager) {
         this.userRepository = userRepository;
+        this.profileRepository = profileRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.authManager = authManager;
@@ -34,20 +39,27 @@ public class AuthUseCase {
 
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.email())) {
-            logger.warn("Tentativa de registrar email já existente: {}", request.email());
-            throw new IllegalArgumentException("Email já cadastrado: " + request.email());
+            logger.warn("Tentativa de registrar email já existente");
+            // Mensagem segura: não expõe o email conforme boas práticas
+            throw new IllegalArgumentException("E-mail já cadastrado.");
         }
 
         var user = new User(
+            request.name(),
             request.email(),
             passwordEncoder.encode(request.password())
         );
 
         // savedUser garante que o ID gerado pelo banco é retornado
         var savedUser = userRepository.saveAndFlush(user);
+
+        // Cria perfil padrão imediatamente após o registro
+        UserProfile defaultProfile = UserProfile.defaultProfile(savedUser.getId(), request.name());
+        profileRepository.save(defaultProfile);
+
         var token = jwtService.generateToken(savedUser.getId().toString(), savedUser.getEmail());
 
-        logger.info("Usuário registrado com sucesso: {}", savedUser.getEmail());
+        logger.info("Usuário registrado com sucesso (id={})", savedUser.getId());
         return new AuthResponse(token, savedUser.getId().toString(), savedUser.getEmail());
     }
 
