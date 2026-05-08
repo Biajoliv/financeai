@@ -1,7 +1,7 @@
 package com.financeai.application.usecase;
 
 import com.financeai.domain.model.*;
-import com.financeai.infrastructure.simulation.DefaultCalculationEngine;
+import com.financeai.domain.service.CalculationEngine;
 import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -10,9 +10,9 @@ import java.util.List;
 @Service
 public class SimulateScenariosUseCase {
 
-    private final DefaultCalculationEngine engine;
+    private final CalculationEngine engine;
 
-    public SimulateScenariosUseCase(DefaultCalculationEngine engine) {
+    public SimulateScenariosUseCase(CalculationEngine engine) {
         this.engine = engine;
     }
 

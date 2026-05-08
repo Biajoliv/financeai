@@ -28,6 +28,7 @@ public class JwtFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain chain) throws ServletException, IOException {
+        System.out.println("Authorization Header: " + request.getHeader("Authorization"));
         var authHeader = request.getHeader("Authorization");
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
@@ -36,6 +37,16 @@ public class JwtFilter extends OncePerRequestFilter {
         }
 
         var token = authHeader.substring(7);
+
+        System.out.println("--- DEBUG JWT FILTER ---");
+        System.out.println("Token extraído: " + token);
+        boolean isValid = jwtService.isValid(token);
+        System.out.println("O token é válido segundo o JwtService? " + isValid);
+
+        if (isValid) {
+            String email = jwtService.extractEmail(token);
+            System.out.println("Email extraído do token: " + email);
+        }
 
         if (jwtService.isValid(token) &&
             SecurityContextHolder.getContext().getAuthentication() == null) {

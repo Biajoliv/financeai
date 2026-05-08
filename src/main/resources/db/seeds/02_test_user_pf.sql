@@ -1,18 +1,21 @@
--- SEED: 5 Usuários Pessoa Física
-INSERT INTO users (email, password_hash, user_type) VALUES 
-('perfil.universitario@email.com', 'hash1', 'FREE'),
-('perfil.clt.junior@email.com', 'hash2', 'FREE'),
-('perfil.clt.senior@email.com', 'hash3', 'PREMIUM'),
-('perfil.aposentado@email.com', 'hash4', 'FREE'),
-('perfil.investidor@email.com', 'hash5', 'PREMIUM');
+-- =============================================================================
+-- SEED 02: USUÁRIOS PESSOA FÍSICA (UUID & AUDIT)
+-- =============================================================================
 
--- Perfis e Contas
-INSERT INTO user_profiles (user_id, full_name_encrypted, holder_type, education, postal_code, has_open_finance_active) VALUES 
-((SELECT id FROM users WHERE email = 'perfil.universitario@email.com'), 'Carlos Edu', 'PF', 'UNDERGRADUATE', '36700-000', true),
-((SELECT id FROM users WHERE email = 'perfil.clt.junior@email.com'), 'Mariana Souza', 'PF', 'GRADUATE', '30110-000', true),
-((SELECT id FROM users WHERE email = 'perfil.clt.senior@email.com'), 'Ricardo Alves', 'PF', 'GRADUATE', '01310-000', true),
-((SELECT id FROM users WHERE email = 'perfil.aposentado@email.com'), 'Beatriz Helena', 'PF', 'BASIC', '36700-000', false), -- SEM OPEN FINANCE
-((SELECT id FROM users WHERE email = 'perfil.investidor@email.com'), 'Marcos Vinicius', 'PF', 'DOCTORATE', '22041-001', true);
+INSERT INTO users (email, password_hash, user_type, created_at, updated_at) VALUES 
+('perfil.universitario@email.com', 'hash1', 'FREE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('perfil.clt.junior@email.com', 'hash2', 'FREE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('perfil.clt.senior@email.com', '$2a$10$8.VocS6Z7VfJ.jZ.Lp6EBeG6vU4h/H8C.p.Y8Z5V6G8V6G8V6G8V6', 'PREMIUM', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('perfil.aposentado@email.com', 'hash4', 'FREE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('perfil.investidor@email.com', 'hash5', 'PREMIUM', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+
+-- Perfis vinculados via Email (mais seguro que ID fixo)
+INSERT INTO user_profiles (user_id, full_name_encrypted, holder_type, education, postal_code, has_open_finance_active, created_at, updated_at) VALUES 
+((SELECT id FROM users WHERE email = 'perfil.universitario@email.com'), 'Carlos Edu', 'PF', 'UNDERGRADUATE', '36700-000', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+((SELECT id FROM users WHERE email = 'perfil.clt.junior@email.com'), 'Mariana Souza', 'PF', 'GRADUATE', '30110-000', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+((SELECT id FROM users WHERE email = 'perfil.clt.senior@email.com'), 'Ricardo Alves', 'PF', 'GRADUATE', '01310-000', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+((SELECT id FROM users WHERE email = 'perfil.aposentado@email.com'), 'Beatriz Helena', 'PF', 'BASIC', '36700-000', false, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+((SELECT id FROM users WHERE email = 'perfil.investidor@email.com'), 'Marcos Vinicius', 'PF', 'DOCTORATE', '22041-001', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 -- Contas em Bancos Diferentes
 INSERT INTO financial_accounts (user_id, institution_id, account_type, balance) VALUES 
