@@ -14,7 +14,7 @@ O MVP do FinanceAI (Java Spring Boot + PostgreSQL) necessita de melhorias críti
 ## ⚠️ Restrições Críticas (NÃO NEGOCIÁVEIS)
 - ⚠️ **NÃO modificar arquivos de Auth/JWT/Security** - Login é sensível
 - ⚠️ **NÃO mudar .env ou configs de infraestrutura** - Evitar conflitos de branch
-- ⚠️ **Manter registro com APENAS email + senha** - Não quebrar compilação
+- ⚠️ **Manter login com APENAS email + senha** - Não quebrar compilação
 - ✅ **Apenas soft delete** (deleted_at != null) - Sem deleções permanentes
 - ✅ **Regras HTTP** + códigos de status apropriados em todas as respostas
 - ⚠️ **CAMPOS IMUTÁVEIS**: email, senha, documento (CPF/CNPJ), account_holder_type
@@ -232,7 +232,9 @@ O MVP do FinanceAI (Java Spring Boot + PostgreSQL) necessita de melhorias críti
 
 ### 🔐 Rotas Públicas (sem JWT):
 - `POST /auth/register` - Criar usuário + perfil padrão
+  Obrigatórios: nome, cpf_cnpj, email, senha
 - `POST /auth/login` - Obter token JWT
+  Obrigatórios: email, senha
 - `GET /api/analysis/status` - Status operacional
 
 ### 🔒 Rotas Protegidas (requerem JWT):
@@ -251,17 +253,21 @@ O MVP do FinanceAI (Java Spring Boot + PostgreSQL) necessita de melhorias críti
 - `GET /api/transaction` - Listar transações do usuário
 - `DELETE /api/transaction/{id}` - Deletar transação (soft delete)
 
-**Simulações:**
-- `POST /api/simulation` - Criar simulação (executa engine + persiste)
-- `GET /api/simulation/list` - Listar simulações do usuário
-- `GET /api/simulation/{id}` - Obter simulação específica
-
 **Relatórios:**
 - `GET /api/report/list` - Listar relatórios do usuário
 - `GET /api/report/{id}` - Obter relatório específico
 
 **Análise (existentes, refatorados):**
 - `POST /api/analysis/simulate` - Executar simulação (usa dados do banco, não mocked)
+  (enviado pela IA)
+  Obrigatório: "goal": {
+        "name": "O que o usuário quer?",
+        "targetAmount": ,
+        "deadline": "YYYY-MM-DD",
+        "profile": "PF ou PJ"
+    }
+- `GET /api/analysis/simulation/list` - Listar simulações do usuário
+- `GET /api/analysis/simulation/{id}` - Obter simulação específica
 - `GET /api/analysis/config/weights` - Obter pesos de categoria do banco
 - `GET /api/analysis/config/tax-rules` - Obter regras de tributação
 - `DELETE /api/analysis/{diagnosticId}` - Deletar diagnóstico
@@ -335,7 +341,6 @@ O MVP do FinanceAI (Java Spring Boot + PostgreSQL) necessita de melhorias críti
 - **report_interval**: WEEKLY, BIWEEKLY, MONTHLY
 - **open_finance**: true/false
 - **endereco**: string (endereço)
-- **aniversario**: date (data de nascimento)
 
 ---
 
