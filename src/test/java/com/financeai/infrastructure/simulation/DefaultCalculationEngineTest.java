@@ -2,6 +2,7 @@ package com.financeai.infrastructure.simulation;
 
 import com.financeai.domain.model.*;
 import com.financeai.infrastructure.utils.DataSanitizer;
+import com.financeai.infrastructure.algorithm.KnapsackOptimizer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -23,14 +24,20 @@ class DefaultCalculationEngineTest {
 
     private DefaultCalculationEngine engine;
     private DataSanitizer sanitizer;
+    private KnapsackOptimizer knapsackOptimizer;
     private final String userId = "user-aloana-123"; // Simulação de Multi-tenant [cite: 50]
 
     @BeforeEach
     void setUp() {
         sanitizer = Mockito.mock(DataSanitizer.class);
+        knapsackOptimizer = Mockito.mock(KnapsackOptimizer.class);
         // Mock do sanitizer para garantir que o foco do teste seja a lógica de cálculo [cite: 43]
         Mockito.when(sanitizer.sanitizeDescription(anyString())).thenAnswer(i -> i.getArgument(0));
-        engine = new DefaultCalculationEngine(sanitizer);
+        // Mock knapsack optimizer to return empty list by default (no cuts recommended)
+        Mockito.when(knapsackOptimizer.optimizeExpenses(Mockito.anyList(), Mockito.any(), Mockito.anyMap()))
+                .thenReturn(new ArrayList<>());
+        Mockito.when(knapsackOptimizer.calculateDynamicWeights()).thenReturn(new java.util.HashMap<>());
+        engine = new DefaultCalculationEngine(sanitizer, knapsackOptimizer);
     }
 
     @Test
@@ -98,7 +105,13 @@ class DefaultCalculationEngineTest {
         );
         FinancialGoal goal = new FinancialGoal("Meta", new BigDecimal("6000.00"), LocalDate.now().plusMonths(12), UserProfile.INDIVIDUAL);
 
-        // WHEN
+        // WHEN: Mock knapsack to return some optimization items for this test
+        List<Transaction> optionalExpenses = transactions.stream()
+                .filter(t -> !t.isEssential() && t.amount().compareTo(BigDecimal.ZERO) < 0)
+                .toList();
+        Mockito.when(knapsackOptimizer.optimizeExpenses(Mockito.anyList(), Mockito.any(), Mockito.anyMap()))
+                .thenReturn(optionalExpenses);
+        
         FinancialDiagnostic diagnostic = engine.calculate(userId, transactions, goal);
 
         // THEN: Deve identificar o chunk de otimização para o pipeline RAG [cite: 124, 321]
