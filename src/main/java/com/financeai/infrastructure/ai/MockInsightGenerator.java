@@ -10,24 +10,27 @@ public class MockInsightGenerator implements InsightGenerator {
 
     @Override
     public String gerar(String prompt) {
-
         return """
                 {
-                  "diagnostico": "Seu objetivo é viável, mas exige redução de gastos e maior organização financeira.",
-                  "recomendacoes": [
-                    "Reduzir gastos com delivery",
-                    "Separar dinheiro no início do mês",
-                    "Cancelar assinaturas pouco usadas"
+                  "diagnostico": "O usuário apresenta desequilíbrio financeiro mensal e precisa reorganizar gastos para atingir o objetivo.",
+                  "nivel_risco": "alto",
+                  "principais_problemas": [
+                    "Gastos variáveis elevados",
+                    "Baixa previsibilidade financeira"
                   ],
-                  "riscos": [
-                    "Gastos impulsivos",
-                    "Falta de reserva de emergência"
+                  "recomendacoes": [
+                    "Reduzir gastos não essenciais",
+                    "Definir um limite semanal de despesas",
+                    "Separar uma quantia fixa no início do mês"
                   ],
                   "proximos_passos": [
-                    "Criar orçamento mensal",
-                    "Definir meta de economia semanal"
+                    "Revisar as últimas transações",
+                    "Definir uma meta mensal realista"
                   ],
-                  "confianca": 0.81
+                  "alertas": [
+                    "A análise é baseada nos dados enviados e pode mudar com novas informações"
+                  ],
+                  "confianca": 0.86
                 }
                 """;
     }
