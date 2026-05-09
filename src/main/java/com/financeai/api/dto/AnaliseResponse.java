@@ -12,3 +12,4 @@ public record AnaliseResponse(
         double confianca
 ) {
 }
+
