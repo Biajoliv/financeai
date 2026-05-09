@@ -2,8 +2,12 @@ package com.financeai.infrastructure.simulation;
 
 import com.financeai.domain.model.*;
 import com.financeai.domain.service.CalculationEngine;
+import com.financeai.domain.service.WeightStrategy;
 import com.financeai.infrastructure.utils.DataSanitizer;
+import com.financeai.infrastructure.algorithm.KnapsackOptimizer;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -12,31 +16,61 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * PRINCÍPIOS SOLID APLICADOS: SRP, OCP, DIP
+ *
+ * PROBLEMAS IDENTIFICADOS E CORRIGIDOS:
+ *
+ * 1. CAMPO INUTILIZADO (SRP):
+ *    staticWeights era inicializado no construtor mas NUNCA usado — o KnapsackOptimizer
+ *    recalculava internamente via calculateDynamicWeights(). Campo removido.
+ *
+ * 2. CRIAÇÃO DE ESTRATÉGIA COM new (OCP + SRP):
+ *    selectStrategy() instanciava BusinessStrategy/IndividualStrategy diretamente:
+ *      return new BusinessStrategy(new BigDecimal("75.00"), BigDecimal.ZERO);
+ *    Isso violava OCP (novo perfil = modificar o motor) e SRP (motor não deveria
+ *    ser responsável por construção de objetos).
+ *    SOLUÇÃO: TaxStrategyFactory injetada via construtor — motor delega a criação.
+ *
+ * 3. ACOPLAMENTO AO ALGORITMO DE PESOS (DIP):
+ *    O motor chamava knapsackOptimizer.calculateDynamicWeights() — acoplando
+ *    a lógica de cálculo ao otimizador. Se a origem dos pesos mudar (banco de dados,
+ *    arquivo de configuração), o otimizador precisaria ser alterado.
+ *    SOLUÇÃO: WeightStrategy injetada — o motor recebe pesos prontos, sem conhecer a origem.
+ */
 @Service
 public class DefaultCalculationEngine implements CalculationEngine {
 
-    private final DataSanitizer sanitizer;
-    private final Map<String, Double> categoryWeights;
+    private static final Logger logger = LoggerFactory.getLogger(DefaultCalculationEngine.class);
 
-    public DefaultCalculationEngine(DataSanitizer sanitizer) {
+    private final DataSanitizer sanitizer;
+    private final KnapsackOptimizer knapsackOptimizer;
+    private final WeightStrategy weightStrategy;
+    private final TaxStrategyFactory taxStrategyFactory;
+
+    public DefaultCalculationEngine(
+            DataSanitizer sanitizer,
+            KnapsackOptimizer knapsackOptimizer,
+            WeightStrategy weightStrategy,
+            TaxStrategyFactory taxStrategyFactory) {
         this.sanitizer = sanitizer;
-        Map<String, Double> weights = new HashMap<>();
-        weights.put("EDUCATION", 2.0);
-        weights.put("HEALTH", 2.5);
-        weights.put("ENTERTAINMENT", 0.5);
-        weights.put("SUBSCRIPTIONS", 0.7);
-        this.categoryWeights = Collections.unmodifiableMap(weights);
+        this.knapsackOptimizer = knapsackOptimizer;
+        this.weightStrategy = weightStrategy;
+        this.taxStrategyFactory = taxStrategyFactory;
     }
 
     @Override
     public FinancialDiagnostic calculate(String userId, List<Transaction> transactions, FinancialGoal goal) {
+        logger.info("[Tenant: {}] Iniciando cálculo de diagnóstico financeiro", userId);
+
         if (transactions == null || transactions.isEmpty()) {
+            logger.warn("[Tenant: {}] Nenhuma transação fornecida", userId);
             return createEmptyDiagnostic();
         }
 
-        // Java 21: Record Pattern Matching para log e rastreabilidade por Tenant [cite: 282, 312]
+        // Java 21: Record Pattern Matching para rastreabilidade por Tenant
         if (goal instanceof FinancialGoal(String name, BigDecimal target, LocalDate deadline, UserProfile profile)) {
-            System.out.println("LOG [Tenant: " + userId + "] - Analisando meta: " + name);
+            logger.info("[Tenant: {}] Analisando meta: {} (alvo: R$ {})", userId, name, target);
         }
 
         // 1. Sanitização e Limpeza de Dados
@@ -47,9 +81,11 @@ public class DefaultCalculationEngine implements CalculationEngine {
                 .collect(Collectors.toList());
 
         BigDecimal currentBalance = calculateInitialBalance(cleanTransactions);
-        
-        // 2. Aplicação da Estratégia Fiscal (Uso de Sealed Interface) [cite: 169, 172, 360]
-        StrategyCalculation strategy = selectStrategy(goal);
+
+        // 2. Aplicação da Estratégia Fiscal via Factory — OCP aplicado
+        // TaxStrategyFactory decide qual implementação usar com base no perfil.
+        // Adicionar novo perfil = novo case na factory, sem tocar aqui.
+        StrategyCalculation strategy = taxStrategyFactory.createFor(goal.profile());
         BigDecimal adjustedBalance = strategy.applyTaxDeduction(currentBalance);
 
         // 3. Cálculos de Taxas e Liquidez
@@ -60,22 +96,25 @@ public class DefaultCalculationEngine implements CalculationEngine {
         BigDecimal monthlyGap = calculateMonthlyGap(adjustedBalance, goal);
         List<String> recommendations = new ArrayList<>();
 
-        // 4. Otimização (Variação do Problema da Mochila) [cite: 218, 219, 358]
-        List<Transaction> suggestedCuts = optimizeSavings(cleanTransactions, monthlyGap);
+        // 4. Otimização (Variação do Problema da Mochila)
+        // WeightStrategy injetada fornece os pesos — motor não sabe se são sazonais ou do banco
+        Map<String, Double> weights = weightStrategy.calculateWeights();
+        List<Transaction> suggestedCuts = optimizeSavings(cleanTransactions, monthlyGap, weights);
         BigDecimal totalPotentialSaving = suggestedCuts.stream()
                 .map(t -> t.amount().abs())
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         if (!suggestedCuts.isEmpty()) {
             recommendations.add("OTIMIZACAO_CORTES_DISPONIVEL");
-            alerts.add(String.format("Sugestão de economia: R$ %.2f focando em itens não essenciais.", 
+            alerts.add(String.format("Sugestão de economia: R$ %.2f focando em itens não essenciais.",
                     totalPotentialSaving));
+            logger.debug("[Tenant: {}] Oportunidades de otimização identificadas: R$ {}", userId, totalPotentialSaving);
         }
 
         // 5. Projeção de Prazo e Formatação
         if (totalPotentialSaving.compareTo(monthlyGap) < 0 || monthlyGap.compareTo(BigDecimal.ZERO) > 0) {
             LocalDate suggestedDate = calculateNewDeadline(adjustedBalance, goal, totalPotentialSaving);
-            
+
             Locale ptBr = Locale.of("pt", "BR");
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMMM 'de' yyyy", ptBr);
             String formattedDate = suggestedDate.format(formatter);
@@ -83,7 +122,10 @@ public class DefaultCalculationEngine implements CalculationEngine {
 
             alerts.add(String.format("ALERTA ESTRATÉGICO: Sugerimos estender o prazo para %s.", formattedDate));
             recommendations.add("REVISAO_ESTRUTURAL_NECESSARIA");
+            logger.info("[Tenant: {}] Revisão estrutural recomendada. Novo prazo sugerido: {}", userId, formattedDate);
         }
+
+        logger.info("[Tenant: {}] Cálculo finalizado. Saldo ajustado: R$ {}", userId, adjustedBalance);
 
         return new FinancialDiagnostic(
                 adjustedBalance,
@@ -97,7 +139,7 @@ public class DefaultCalculationEngine implements CalculationEngine {
 
     private Integer simulateLiquidity(BigDecimal balance, BigDecimal dailyRate, List<String> alerts) {
         if (dailyRate.compareTo(BigDecimal.ZERO) <= 0) return null;
-        
+
         BigDecimal simulated = balance;
         for (int day = 1; day <= 30; day++) {
             simulated = simulated.subtract(dailyRate);
@@ -109,39 +151,32 @@ public class DefaultCalculationEngine implements CalculationEngine {
         return null;
     }
 
-    private List<Transaction> optimizeSavings(List<Transaction> transactions, BigDecimal gap) {
+    // Pesos recebidos por parâmetro — desacoplado da origem (sazonal, banco, etc.)
+    private List<Transaction> optimizeSavings(List<Transaction> transactions, BigDecimal gap,
+                                              Map<String, Double> weights) {
         if (gap.compareTo(BigDecimal.ZERO) <= 0) return Collections.emptyList();
-        
-        return transactions.stream()
+
+        List<Transaction> nonEssential = transactions.stream()
                 .filter(t -> t.amount().compareTo(BigDecimal.ZERO) < 0 && !t.isEssential())
-                .sorted((t1, t2) -> {
-                    double weight1 = categoryWeights.getOrDefault(t1.category(), 1.0);
-                    double weight2 = categoryWeights.getOrDefault(t2.category(), 1.0);
-                    double eff1 = (t1.amount().abs().doubleValue() / Math.pow(t1.priority(), 2)) / weight1;
-                    double eff2 = (t2.amount().abs().doubleValue() / Math.pow(t2.priority(), 2)) / weight2;
-                    return Double.compare(eff2, eff1);
-                })
                 .collect(Collectors.toList());
+
+        if (nonEssential.isEmpty()) return Collections.emptyList();
+
+        return knapsackOptimizer.optimizeExpenses(nonEssential, gap, weights);
     }
 
     private LocalDate calculateNewDeadline(BigDecimal balance, FinancialGoal goal, BigDecimal monthlySurplus) {
         if (monthlySurplus.compareTo(BigDecimal.ZERO) <= 0) return goal.deadline().plusYears(1);
-        
+
         BigDecimal remaining = goal.targetAmount().subtract(balance);
         if (remaining.compareTo(BigDecimal.ZERO) <= 0) return LocalDate.now();
-        
+
         long monthsNeeded = remaining.divide(monthlySurplus, 0, RoundingMode.CEILING).longValue();
         LocalDate projected = LocalDate.now().plusMonths(monthsNeeded);
-        
-        return (projected.getDayOfMonth() > 15) 
-                ? projected.plusMonths(1).withDayOfMonth(1) 
-                : projected.withDayOfMonth(1);
-    }
 
-    private StrategyCalculation selectStrategy(FinancialGoal goal) {
-        return (goal.profile() == UserProfile.BUSINESS) 
-                ? new BusinessStrategy(new BigDecimal("75.00"), BigDecimal.ZERO) 
-                : new IndividualStrategy();
+        return (projected.getDayOfMonth() > 15)
+                ? projected.plusMonths(1).withDayOfMonth(1)
+                : projected.withDayOfMonth(1);
     }
 
     private BigDecimal calculateInitialBalance(List<Transaction> transactions) {
@@ -158,8 +193,8 @@ public class DefaultCalculationEngine implements CalculationEngine {
 
     private BigDecimal calculateMonthlyGap(BigDecimal balance, FinancialGoal goal) {
         BigDecimal remaining = goal.targetAmount().subtract(balance);
-        return (remaining.compareTo(BigDecimal.ZERO) > 0) 
-                ? remaining.divide(new BigDecimal("12"), 2, RoundingMode.HALF_UP) 
+        return (remaining.compareTo(BigDecimal.ZERO) > 0)
+                ? remaining.divide(new BigDecimal("12"), 2, RoundingMode.HALF_UP)
                 : BigDecimal.ZERO;
     }
 

@@ -5,16 +5,18 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.*;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Objects;
 
 @Entity
 @Table(name = "transactions",
        indexes = {
            @Index(name = "idx_transaction_user", columnList = "user_id"),
-           @Index(name = "idx_transaction_date", columnList = "date")
+           @Index(name = "idx_transaction_date", columnList = "transaction_date")
        })
 @Getter
 @Setter
@@ -47,8 +49,24 @@ public class Transaction {
     @Column(nullable = false)
     private Category category;
 
+    @Column(name = "transaction_date")
     @Builder.Default
     private LocalDate date = LocalDate.now();
+
+    @Column(name = "is_open_finance")
+    @Builder.Default
+    private boolean isOpenFinance = false;
+
+    @Column(name = "created_at", updatable = false)
+    @Builder.Default
+    private LocalDateTime createdAt = LocalDateTime.now();
+
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)

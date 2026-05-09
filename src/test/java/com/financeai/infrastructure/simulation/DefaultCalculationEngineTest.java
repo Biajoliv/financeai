@@ -1,7 +1,9 @@
 package com.financeai.infrastructure.simulation;
 
 import com.financeai.domain.model.*;
+import com.financeai.domain.service.WeightStrategy;
 import com.financeai.infrastructure.utils.DataSanitizer;
+import com.financeai.infrastructure.algorithm.KnapsackOptimizer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -10,27 +12,46 @@ import org.mockito.Mockito;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
 
 /**
- * Suíte de testes para validar o motor de cálculo conforme os requisitos do Tema 4. [cite: 117]
- * Valida Multi-tenancy, Algoritmos de Otimização e Java 21. [cite: 17, 34, 50]
+ * Suíte de testes para validar o motor de cálculo conforme os requisitos do Tema 4.
+ * Valida Multi-tenancy, Algoritmos de Otimização e Java 21.
+ *
+ * ATUALIZADO: construtor agora recebe WeightStrategy e TaxStrategyFactory via injeção.
+ * WeightStrategy é mockada para retornar pesos vazios por padrão — isolamento de teste.
  */
 class DefaultCalculationEngineTest {
 
     private DefaultCalculationEngine engine;
     private DataSanitizer sanitizer;
-    private final String userId = "user-aloana-123"; // Simulação de Multi-tenant [cite: 50]
+    private KnapsackOptimizer knapsackOptimizer;
+    private WeightStrategy weightStrategy;
+    private TaxStrategyFactory taxStrategyFactory;
+    private final String userId = "user-aloana-123";
 
     @BeforeEach
     void setUp() {
         sanitizer = Mockito.mock(DataSanitizer.class);
-        // Mock do sanitizer para garantir que o foco do teste seja a lógica de cálculo [cite: 43]
+        knapsackOptimizer = Mockito.mock(KnapsackOptimizer.class);
+        weightStrategy = Mockito.mock(WeightStrategy.class);
+
+        // TaxStrategyFactory não é mockada: usa implementação real para validar estratégias PF/PJ
+        taxStrategyFactory = new TaxStrategyFactory();
+
         Mockito.when(sanitizer.sanitizeDescription(anyString())).thenAnswer(i -> i.getArgument(0));
-        engine = new DefaultCalculationEngine(sanitizer);
+        Mockito.when(knapsackOptimizer.optimizeExpenses(Mockito.anyList(), Mockito.any(), Mockito.anyMap()))
+                .thenReturn(new ArrayList<>());
+
+        // Pesos retornados vazios por padrão — KnapsackOptimizer usa getOrDefault(category, 1.0)
+        Mockito.when(weightStrategy.calculateWeights()).thenReturn(new HashMap<>());
+
+        engine = new DefaultCalculationEngine(sanitizer, knapsackOptimizer, weightStrategy, taxStrategyFactory);
     }
 
     @Test
@@ -98,7 +119,13 @@ class DefaultCalculationEngineTest {
         );
         FinancialGoal goal = new FinancialGoal("Meta", new BigDecimal("6000.00"), LocalDate.now().plusMonths(12), UserProfile.INDIVIDUAL);
 
-        // WHEN
+        // WHEN: Mock knapsack to return some optimization items for this test
+        List<Transaction> optionalExpenses = transactions.stream()
+                .filter(t -> !t.isEssential() && t.amount().compareTo(BigDecimal.ZERO) < 0)
+                .toList();
+        Mockito.when(knapsackOptimizer.optimizeExpenses(Mockito.anyList(), Mockito.any(), Mockito.anyMap()))
+                .thenReturn(optionalExpenses);
+        
         FinancialDiagnostic diagnostic = engine.calculate(userId, transactions, goal);
 
         // THEN: Deve identificar o chunk de otimização para o pipeline RAG [cite: 124, 321]

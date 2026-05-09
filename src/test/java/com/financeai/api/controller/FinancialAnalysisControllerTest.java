@@ -1,5 +1,6 @@
 package com.financeai.api.controller;
 
+import org.springframework.security.test.context.support.WithMockUser;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +15,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@WithMockUser(username = "perfil.clt.senior@email.com")
 class FinancialAnalysisControllerTest {
 
     @Autowired

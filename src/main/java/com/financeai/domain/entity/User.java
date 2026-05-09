@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.*;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -22,12 +23,12 @@ import java.util.Objects;
 public class User {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue(strategy = GenerationType.AUTO)
     @Setter(AccessLevel.NONE)
-    private String id;
+    @Column(name = "id", updatable = false, nullable = false)
+    private java.util.UUID id;
 
-    @NotBlank(message = "Nome é obrigatório")
-    @Column(nullable = false)
+    @Column(name = "name")
     private String name;
 
     @Email(message = "Email inválido")
@@ -36,12 +37,24 @@ public class User {
     private String email;
 
     @NotBlank(message = "Senha é obrigatória")
-    @Column(nullable = false)
+    @Column(name = "password_hash", nullable = false)
     private String password;
+
+    // system_role = FREE ou PREMIUM (conforme plano)
+    @Column(name = "system_role")
+    @Builder.Default
+    private String systemRole = "FREE";
 
     @Column(updatable = false, nullable = false)
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    @UpdateTimestamp
+    @Column(nullable = false)
+    private LocalDateTime updatedAt;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
 
     // Relacionamentos inicializados como lista vazia — evita NullPointerException
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL,
@@ -59,14 +72,20 @@ public class User {
     @Builder.Default
     private List<Diagnostic> diagnostics = new ArrayList<>();
 
-    public User(String name, String email, String password) {
-        this.name = name;
+    public User(String email, String password) {
         this.email = email;
         this.password = password;
+        this.systemRole = "FREE";
         this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
         this.transactions = new ArrayList<>();
         this.goals = new ArrayList<>();
         this.diagnostics = new ArrayList<>();
+    }
+
+    public User(String name, String email, String password) {
+        this(email, password);
+        this.name = name;
     }
 
     @Override
@@ -85,9 +104,9 @@ public class User {
     public String toString() {
         return "User{" +
                 "id='" + id + '\'' +
-                ", name='" + name + '\'' +
                 ", email='" + email + '\'' +
                 ", createdAt=" + createdAt +
+                ", deletedAt=" + deletedAt +
                 '}';
     }
 }

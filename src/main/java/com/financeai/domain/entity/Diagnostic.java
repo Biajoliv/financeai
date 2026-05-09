@@ -2,6 +2,7 @@ package com.financeai.domain.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -52,6 +53,13 @@ public class Diagnostic {
     @Column(updatable = false, nullable = false)
     @Builder.Default
     private LocalDateTime generatedAt = LocalDateTime.now();
+
+    @UpdateTimestamp
+    @Column(nullable = false)
+    private LocalDateTime updatedAt;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
@@ -117,6 +125,7 @@ public class Diagnostic {
                 ", currentBalance=" + currentBalance +
                 ", projectedBalance=" + projectedBalance +
                 ", generatedAt=" + generatedAt +
+                ", deletedAt=" + deletedAt +
                 '}';
     }
 }

@@ -3,35 +3,71 @@ package com.financeai.api.exception;
 import com.financeai.api.dto.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(NullPointerException.class)
-    public ResponseEntity<ApiResponse<Void>> handleNullPointer(NullPointerException ex) {
+    private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    /**
+     * Erros de autenticação (credenciais inválidas, usuário não encontrado)
+     * Permitir que exceções de segurança sejam propagadas, não supprimidas
+     */
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAuthenticationException(AuthenticationException ex) {
+        logger.warn("Falha de autenticação: {}", ex.getMessage());
         return ResponseEntity
-            .status(HttpStatus.BAD_REQUEST)
-            .body(ApiResponse.error("Erro de dados: Certifique-se de enviar todos os campos obrigatórios no JSON."));
+            .status(HttpStatus.UNAUTHORIZED)
+            .body(ApiResponse.error("Email ou senha inválidos."));
     }
 
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<Void>> handleGeneralException(Exception ex) {
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiResponse<Void>> handleIllegalArgument(IllegalArgumentException ex) {
+        // Loga a mensagem completa internamente, mas retorna mensagem segura ao cliente
+        logger.warn("Argumento inválido: {}", ex.getMessage());
+        String safeMessage = ex.getMessage() != null ? ex.getMessage() : "Requisição inválida.";
         return ResponseEntity
-            .status(HttpStatus.INTERNAL_SERVER_ERROR)
-            .body(ApiResponse.error("Erro interno no motor: " + ex.getMessage()));
+            .status(HttpStatus.BAD_REQUEST)
+            .body(ApiResponse.error(safeMessage));
+    }
+
+    @ExceptionHandler(NullPointerException.class)
+    public ResponseEntity<ApiResponse<Void>> handleNullPointer(NullPointerException ex) {
+        logger.error("NullPointerException processada", ex);
+        return ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .body(ApiResponse.error("Erro ao processar requisição: certifique-se de enviar todos os campos obrigatórios."));
     }
 
     @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
     public ResponseEntity<ApiResponse<Void>> handleInvalidFormat(org.springframework.http.converter.HttpMessageNotReadableException ex) {
+        logger.error("HttpMessageNotReadableException: formato inválido", ex);
         return ResponseEntity
             .status(HttpStatus.BAD_REQUEST)
-            .body(ApiResponse.error("Erro de formato: Dados inválidos detectados nos campos numéricos ou de data."));
+            .body(ApiResponse.error("Erro ao processar dados enviados. Verifique o formato."));
     }
 
     @ExceptionHandler(org.springframework.web.bind.MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<Void>> handleValidationErrors(org.springframework.web.bind.MethodArgumentNotValidException ex) {
-        return ResponseEntity.badRequest().body(ApiResponse.error("Erro de validação: " + ex.getBindingResult().getFieldError().getDefaultMessage()));
+        logger.error("Erro de validação: {}", ex.getBindingResult().getFieldError().getDefaultMessage());
+        return ResponseEntity.badRequest().body(ApiResponse.error("Erro de validação em um ou mais campos enviados."));
+    }
+
+    /**
+     * Catch-all para exceções não tratadas — ÚLTIMO a ser verificado
+     * Não deve pegar AuthenticationException ou IllegalArgumentException
+     */
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ApiResponse<Void>> handleGeneralException(Exception ex) {
+        logger.error("Exceção não tratada", ex);
+        return ResponseEntity
+            .status(HttpStatus.INTERNAL_SERVER_ERROR)
+            .body(ApiResponse.error("Erro ao processar requisição. Tente novamente mais tarde."));
     }
 }
