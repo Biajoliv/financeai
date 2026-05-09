@@ -34,7 +34,7 @@ public class UserProfile {
     private String holderType = "PF";
 
     // Tipo de empresa: NONE, MEI, EI, LTDA, SA
-    @Column(name = "business_type")
+    @Column(name = "business_type", columnDefinition = "company_type")
     @Builder.Default
     private String businessType = "NONE";
 
