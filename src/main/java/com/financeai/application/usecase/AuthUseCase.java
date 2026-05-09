@@ -1,14 +1,13 @@
-package com.financeai.usecase;
+package com.financeai.application.usecase;
 
 import com.financeai.domain.entity.User;
 import com.financeai.domain.entity.UserProfile;
-import com.financeai.domain.valueobject.AuthDtos.*;
+import com.financeai.api.dto.AuthDtos.*;
 import com.financeai.infrastructure.persistence.UserProfileRepository;
 import com.financeai.infrastructure.persistence.UserRepository;
 import com.financeai.infrastructure.security.JwtService;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -40,7 +39,6 @@ public class AuthUseCase {
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.email())) {
             logger.warn("Tentativa de registrar email já existente");
-            // Mensagem segura: não expõe o email conforme boas práticas
             throw new IllegalArgumentException("E-mail já cadastrado.");
         }
 
@@ -50,10 +48,8 @@ public class AuthUseCase {
             passwordEncoder.encode(request.password())
         );
 
-        // savedUser garante que o ID gerado pelo banco é retornado
         var savedUser = userRepository.saveAndFlush(user);
 
-        // Cria perfil padrão imediatamente após o registro
         UserProfile defaultProfile = UserProfile.defaultProfile(savedUser.getId(), request.name());
         profileRepository.save(defaultProfile);
 
@@ -70,7 +66,7 @@ public class AuthUseCase {
             );
         } catch (AuthenticationException ex) {
             logger.warn("Falha de autenticação para email: {}", request.email());
-            throw ex;  // Propagar para o GlobalExceptionHandler tratar
+            throw ex;
         }
 
         var user = userRepository.findByEmail(request.email())

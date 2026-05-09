@@ -1,7 +1,7 @@
 package com.financeai.infrastructure.simulation;
 
 import com.financeai.domain.model.Transaction;
-import com.financeai.domain.service.TransactionProvider;
+import com.financeai.domain.port.TransactionProvider;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

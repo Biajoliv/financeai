@@ -5,7 +5,7 @@ import com.financeai.application.service.UserService;
 import com.financeai.domain.entity.Diagnostic;
 import com.financeai.domain.entity.SimulationRecord;
 import com.financeai.domain.model.*;
-import com.financeai.domain.repository.DiagnosticRepository;
+import com.financeai.infrastructure.persistence.DiagnosticRepository;
 import com.financeai.infrastructure.persistence.SimulationRecordRepository;
 import com.financeai.application.usecase.*;
 import com.fasterxml.jackson.databind.ObjectMapper;

@@ -1,7 +1,7 @@
-package com.financeai.controller;
+package com.financeai.api.controller;
 
-import com.financeai.domain.valueobject.AuthDtos.*;
-import com.financeai.usecase.AuthUseCase;
+import com.financeai.api.dto.AuthDtos.*;
+import com.financeai.application.usecase.AuthUseCase;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;

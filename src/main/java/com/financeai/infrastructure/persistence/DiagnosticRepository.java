@@ -1,4 +1,4 @@
-package com.financeai.domain.repository;
+package com.financeai.infrastructure.persistence;
 
 import com.financeai.domain.entity.Diagnostic;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -10,15 +10,12 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface DiagnosticRepository extends JpaRepository<Diagnostic, java.util.UUID> {
-    // Busca histórico de diagnósticos não deletados (soft delete)
+public interface DiagnosticRepository extends JpaRepository<Diagnostic, String> {
     @Query("SELECT d FROM Diagnostic d WHERE d.user.id = :userId AND d.deletedAt IS NULL ORDER BY d.generatedAt DESC")
     List<Diagnostic> findByUserIdAndNotDeleted(@Param("userId") UUID userId);
-    
-    // Busca histórico compatível com assinatura original
-    List<Diagnostic> findByUserIdOrderByGeneratedAtDesc(java.util.UUID userId);
-    
-    // Busca um diagnóstico específico (não deletado)
+
+    List<Diagnostic> findByUserIdOrderByGeneratedAtDesc(UUID userId);
+
     @Query("SELECT d FROM Diagnostic d WHERE d.id = :id AND d.user.id = :userId AND d.deletedAt IS NULL")
     Optional<Diagnostic> findByIdAndUserIdAndNotDeleted(@Param("id") String id, @Param("userId") String userId);
 }

@@ -2,7 +2,7 @@ package com.financeai.application.usecase;
 
 import com.financeai.domain.entity.SimulationRecord;
 import com.financeai.domain.model.*;
-import com.financeai.domain.service.CalculationEngine;
+import com.financeai.domain.port.CalculationEngine;
 import com.financeai.infrastructure.persistence.SimulationRecordRepository;
 import com.financeai.infrastructure.persistence.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;

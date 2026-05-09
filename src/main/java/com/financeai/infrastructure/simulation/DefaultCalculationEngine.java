@@ -1,8 +1,8 @@
 package com.financeai.infrastructure.simulation;
 
 import com.financeai.domain.model.*;
-import com.financeai.domain.service.CalculationEngine;
-import com.financeai.domain.service.WeightStrategy;
+import com.financeai.domain.port.CalculationEngine;
+import com.financeai.domain.port.WeightStrategy;
 import com.financeai.infrastructure.utils.DataSanitizer;
 import com.financeai.infrastructure.algorithm.KnapsackOptimizer;
 import org.springframework.stereotype.Service;

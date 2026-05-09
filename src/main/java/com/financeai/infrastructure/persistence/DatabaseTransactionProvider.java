@@ -1,7 +1,7 @@
 package com.financeai.infrastructure.persistence;
 
 import com.financeai.domain.model.Transaction;
-import com.financeai.domain.service.TransactionProvider;
+import com.financeai.domain.port.TransactionProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Primary;

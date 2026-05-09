@@ -7,7 +7,7 @@ import com.financeai.domain.entity.ReportRecord;
 import com.financeai.domain.entity.UserProfile;
 import com.financeai.domain.model.ReportInterval;
 import com.financeai.domain.model.Transaction;
-import com.financeai.domain.service.TransactionProvider;
+import com.financeai.domain.port.TransactionProvider;
 import com.financeai.infrastructure.persistence.ReportRecordRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;

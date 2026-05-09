@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Service
@@ -48,5 +49,14 @@ public class UserService {
     public User getEntityByEmail(String email) {
         return userRepository.findByEmailAndDeletedAtIsNull(email)
                 .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
+    }
+
+    @Transactional
+    public void deleteAccount(String email) {
+        User user = userRepository.findByEmailAndDeletedAtIsNull(email)
+                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
+        user.setDeletedAt(LocalDateTime.now());
+        userRepository.save(user);
+        logger.info("[Tenant: {}] Conta deletada com sucesso", email);
     }
 }
